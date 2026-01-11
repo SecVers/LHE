@@ -1,6 +1,6 @@
 # LHE (Lightweight Heuristic Engine)
 
-**LHE (Lightweight Heuristic Engine)** is a lightweight, local-first Windows security tool focused on mitigating **info-stealers, droppers, and script-based attacks** using **behavior + context heuristics** instead of signature databases.
+**LHE (Lightweight Heuristic Engine)** is a lightweight, local-first Windows security tool focused on mitigating **info-stealers, droppers, ransomware, and script-based attacks** using **behavior + context heuristics** instead of signature databases.
 
 It’s designed to be useful even when:
 
@@ -21,7 +21,7 @@ It starts with:
 - LOLBins (Living Off The Land binaries),
 - suspicious parent → child process chains,
 - payload staging in user-writable locations,
-- quick execution meant to outrun detection.
+- rapid file modification meant to outrun detection.
 
 LHE aims to make those patterns **louder, harder, and riskier** for attackers.
 
@@ -50,9 +50,14 @@ Targets tools such as:
 
 ### Suspicious process chains (parent → child)
 Examples:
-- Office / PDF / Browser spawning PowerShell or script hosts
+- Office / PDF / Media players spawning PowerShell or script hosts
 - cracked tools spawning hidden shells
 - “installer” processes launching interpreters from non-system paths
+
+### Ransomware-style file modification bursts
+Examples:
+- rapid file edits across user folders
+- high-entropy file writes that resemble encryption
 
 ---
 
@@ -62,70 +67,71 @@ LHE does **not**:
 
 - maintain a global cloud reputation database,
 - guarantee 100% detection of all threats,
-- provide deep memory scanning,
-- provide kernel-level protection.
+- provide deep memory scanning via a kernel driver,
+- replace a managed endpoint solution.
 
 ---
 
-## High-level features
+## Key features (current)
 
-### Real-time process monitoring
-Every new process can be evaluated for:
+### Runtime Guard (process start monitoring)
+Monitors every new process and evaluates:
 - launch location (path context)
 - signature state and signer (when available)
-- known-safe system/vendor binaries
 - risky execution origins (user-writable paths)
 
-### Heuristic risk scoring
-Suspicious binaries can be scored by:
-- location (Downloads / Temp / Startup)
-- signature state (unsigned / unknown signer)
-- metadata hints (company/product fields)
-- behavior patterns (via additional scanners)
+If a process is considered unsafe, LHE can terminate it and quarantine the executable.
 
-### Suspicious file scanning
-The **SuspiciousFileScanner** can analyze potentially dangerous executables by:
-- calculating entropy (packed/encrypted/obfuscated hints)
-- extracting strings and searching for common dropper/stealer patterns
-- producing:
-  - a suspicion score
-  - human-readable reasons
-- presenting a popup where the user can:
-  - open file location
-  - delete/quarantine the file (if enabled)
-  - explicitly ignore it (at their own risk)
+### Risk Assessment Engine (suspicious file scanning)
+When enabled, LHE scans newly executed files to detect dropper-like traits:
+- high entropy (packed/encrypted/obfuscated hints)
+- weak or unusual string statistics
+- dropper/decryption indicators
 
-### Interpreter / LOLBin guard
-A dedicated guard inspects command lines of common tools such as:
-- `python.exe`, `java.exe`, `node.exe`
-- `powershell.exe`, `pwsh.exe`, `cmd.exe`
-- `wscript.exe`, `cscript.exe`, `mshta.exe`
-- `curl.exe`, `wget.exe`, `bitsadmin.exe`, `certutil.exe`
+It then presents a human-readable popup with reasons and actions (delete, open location, ignore).
 
-It can flag/block patterns like:
-- `-enc`, `-encodedcommand`
-- heavy obfuscation (`%00`, `\u`, `\x`, etc.)
-- hidden window execution + non-system paths
-- downloader + execute chains
+### Interpreter Guard (LOLBin + script host protection)
+A dedicated guard inspects command lines for:
+- suspicious interpreter locations (AppData/Temp/etc.)
+- encoded/obfuscated commands (e.g., `-enc`, `\u`, `\x`)
+- downloader chains (`curl`, `wget`, `bitsadmin`, `certutil`)
 
-### Process genealogy checks (who started what)
-**ProcessGenealogy** watches parent → child relationships to:
-- identify suspicious chains
-- block or kill the child process
-- optionally terminate the parent if necessary
-- report activity via tray notifications
+It can block unsafe invocations and supports an optional whitelist for game launchers.
 
-### Trusted publisher model (reduce false positives)
-To reduce noise, LHE can:
-- use a curated trusted publisher list (OS vendors, OEMs, major vendors, dev tools, platforms)
-- validate Authenticode signatures when possible
-- treat signed interpreters carefully (signed ≠ safe payload)
+### Office Protection (process genealogy)
+Watches for risky parent → child chains such as:
+- Office or PDF apps spawning PowerShell, cmd, wscript, mshta, rundll32, etc.
 
-### Local-first, lightweight, no cloud
-All analysis is designed to be local:
-- no online lookups
-- no data sent to external servers
-- no signature DB updates needed
+Suspicious chains can be terminated to prevent macro/dropper execution.
+
+### Ransomware Detection
+Monitors file system activity to spot bursty modification patterns and high-entropy writes.
+Suspicious processes are suspended, and a decision dialog lets the user allow or terminate them.
+
+### Memory Forensic Detection
+Performs lightweight scans for suspicious memory regions:
+- private executable + writable regions
+- optional thread-context checks
+
+This adds a basic layer of in-memory anomaly detection without a kernel driver.
+
+### Trusted publisher model (false-positive reduction)
+LHE can avoid flagging known signed vendors (OS vendors, browsers, OEMs, dev tools, etc.).
+
+### Tray-based controls
+All protections can be toggled via the system tray:
+- Interpreter Guard + Whitelist
+- Office Protection
+- Runtime Guard
+- Risk Assessment Engine
+- Ransomware Detection
+- Memory Forensic Detection
+
+---
+
+## Data & networking
+
+LHE’s detection logic is local-first and does not require cloud lookups or signature updates. The codebase includes optional telemetry/update-check components, but they are not wired into the runtime by default unless you integrate them.
 
 ---
 
@@ -134,7 +140,7 @@ All analysis is designed to be local:
 LHE may:
 - kill processes
 - quarantine / rename executables
-- optionally employ self-protection
+- suspend or terminate suspicious tasks
 
 Use it responsibly and preferably together with:
 - a solid backup strategy
