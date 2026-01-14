@@ -1,18 +1,23 @@
 ﻿using SecVerseLHE.Core;
 using SecVerseLHE.Helper;
+using SecVerseLHE.Network;
 using SecVerseLHE.UI;
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace SecVerseLHE
 {
     internal static class Program
     {
+  
         [STAThread]
-        static void Main()
+        static async Task Main()
         {
+            Telemetry telemetry = new Telemetry();
             InitHelper.Initialize();
+            await telemetry.SendTelemetryAsync();
             using (Mutex mutex = new Mutex(true, "SecVersLHE", out bool createdNew))
             {
                 if (!createdNew) return;
@@ -35,6 +40,7 @@ namespace SecVerseLHE
 
                 var ransomwareDetector = new RansomwareDetector(tray, dispatcher);
                 Guid? ransomwareThreadId = null;
+               
 
 
                 monitor.Start();
@@ -76,6 +82,7 @@ namespace SecVerseLHE
                     monitor.riskAssessmentEnabled = isEnabled;
                 };
 
+                
                 tray.RansomwareDetectionToggled += (sender, isEnabled) =>
                 {
                     if (ransomwareThreadId.HasValue)
@@ -93,6 +100,8 @@ namespace SecVerseLHE
                         }
                     }
                 };
+                
+
 
                 tray.ExitRequested += (s, e) => {
 
@@ -110,6 +119,7 @@ namespace SecVerseLHE
 #if !DEBUG
                     BsodProtection.SetCritical(false);
 #endif
+                    telemetry.SendTelemetryAsync();
                     ransomwareDetector.Dispose();
                     dispatcher.Dispose();
                     tray.CleanUp();

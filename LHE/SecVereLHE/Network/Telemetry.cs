@@ -1,5 +1,4 @@
-﻿using Hardware.Info;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using RestSharp;
 using System;
 using System.Management;
@@ -13,7 +12,7 @@ namespace SecVerseLHE.Network
     internal class Telemetry
     {
         private const string BaseUrl = "https://api.secvers.org";
-        private const string PluginName = "debloater";
+        private const string PluginName = "lhe";
 
         private string CurrentVersion => Assembly.GetExecutingAssembly().GetName().Version.ToString();
         private const string UserAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36";
@@ -39,7 +38,7 @@ namespace SecVerseLHE.Network
                 {
                     hwid = GetHardwareId(),
                     pluginVersion = CurrentVersion,
-                    serverName = "Windows Software",
+                    serverName = "LHEUser",
                     timestamp = DateTime.UtcNow.ToString("o"),
                     osVersion = Environment.OSVersion.ToString(),
                     userName = Environment.UserName,

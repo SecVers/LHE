@@ -296,6 +296,9 @@ namespace SecVerseLHE.Core
 
                 try
                 {
+                    if (_disposed || !_isRunning)
+                        break;
+
                     ProcessFileEventLogic(fileEvent);
                 }
                 catch (Exception ex)
@@ -316,6 +319,9 @@ namespace SecVerseLHE.Core
         
         private void ProcessFileEventLogic(FileEventData e)
         {
+            if (_disposed || _cancellationToken.IsCancellationRequested || !_isRunning)
+                return;
+
             string filePath = e.Path;
             if (!IsValidPath(filePath)) return;
             if (IsSystemPathSafe(filePath)) return;
@@ -373,6 +379,18 @@ namespace SecVerseLHE.Core
             {
                 _isRunning = false;
                 DisposeWatchers();
+
+                try
+                {
+                    _eventQueue?.CompleteAdding();
+                }
+                catch { }
+
+                try
+                {
+                    _processingTask?.Wait(1000);
+                }
+                catch { }
 
                 foreach (var kvp in _suspendedProcesses.ToArray())
                 {
@@ -751,6 +769,9 @@ namespace SecVerseLHE.Core
         {
             try
             {
+                if (_disposed || _cancellationToken.IsCancellationRequested || !_isRunning)
+                    return;
+
                 if (activity == null || activity.IsBlocked)
                     return;
 

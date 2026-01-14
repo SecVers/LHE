@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SecVerseLHE.Network;
+using System;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -145,7 +146,7 @@ namespace SecVerseLHE.UI
                         enabled ? "Ransomware Detection Active" : "Ransomware Detection Paused",
                         enabled ? "Ransomware monitoring enabled." : "Ransomware monitoring disabled.");
                 });
-            _menu.Items.Add(_ransomwareToggle);
+            _menu.Items.Add(_ransomwareToggle); 
 
             _meforToggle = CreateToggleMenuItem(
                 "Memory Forensic Detection",
@@ -177,6 +178,13 @@ namespace SecVerseLHE.UI
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
             _menu.Items.Add(aboutItem);
+
+            var updateItem = new ToolStripMenuItem("Check for Updates")
+            {
+                Padding = new Padding(0, 4, 0, 4)
+            };
+            updateItem.Click += (s, e) => Updater.CheckForUpdates();
+            _menu.Items.Add(updateItem);
 
 
             var gitItem = new ToolStripMenuItem("GitHub Repository")
