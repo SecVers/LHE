@@ -39,13 +39,15 @@ namespace SecVerseLHE
 
 
                 var ransomwareDetector = new RansomwareDetector(tray, dispatcher);
+                var hiddenCanaryDetector = new HiddenCanaryDetector(dispatcher);
                 Guid? ransomwareThreadId = null;
-               
+                Guid? hiddenCanaryThreadId = null;
 
 
                 monitor.Start();
                 processMonitor.StartMonitoring(tray);
                 ransomwareThreadId = threadManager.RegisterThread(ransomwareDetector);
+                hiddenCanaryThreadId = threadManager.RegisterThread(hiddenCanaryDetector);
                 RegisterShutdownHandler();
 
                 tray.OfficeProtectionToggled += (sender, isEnabled) =>
@@ -99,6 +101,21 @@ namespace SecVerseLHE
                             threadManager.StopThread(ransomwareThreadId.Value);
                         }
                     }
+
+                    if (hiddenCanaryThreadId.HasValue)
+                    {
+                        if (isEnabled)
+                        {
+                            if (!threadManager.IsThreadRunning(hiddenCanaryThreadId.Value))
+                            {
+                                hiddenCanaryThreadId = threadManager.RegisterThread(hiddenCanaryDetector);
+                            }
+                        }
+                        else
+                        {
+                            threadManager.StopThread(hiddenCanaryThreadId.Value);
+                        }
+                    }
                 };
                 
 
@@ -116,10 +133,17 @@ namespace SecVerseLHE
                         threadManager.StopThread(ransomwareThreadId.Value);
                     }
 
+                    if (hiddenCanaryThreadId.HasValue)
+                    {
+                        threadManager.StopThread(hiddenCanaryThreadId.Value);
+                    }
+
+
 #if !DEBUG
                     BsodProtection.SetCritical(false);
 #endif
                     telemetry.SendTelemetryAsync();
+                    hiddenCanaryDetector.Dispose();
                     ransomwareDetector.Dispose();
                     dispatcher.Dispose();
                     tray.CleanUp();

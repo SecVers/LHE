@@ -19,12 +19,12 @@ namespace SecVerseLHE.Core
     {
         #region Configuration
 
-        private const int IMMEDIATE_BLOCK_THRESHOLD = 60;
-        private const int OBSERVATION_THRESHOLD = 8;
-        private const int OBSERVATION_WINDOW_MS = 3000;
-        private const int SUSTAINED_BLOCK_THRESHOLD = 60;
-        private const double HIGH_ENTROPY_THRESHOLD = 7.5;
-        private const int ENTROPY_SAMPLE_SIZE = 4096;
+        private int IMMEDIATE_BLOCK_THRESHOLD = 60;
+        private int OBSERVATION_THRESHOLD = 8;
+        private int OBSERVATION_WINDOW_MS = 3000;
+        private int SUSTAINED_BLOCK_THRESHOLD = 60;
+        private double HIGH_ENTROPY_THRESHOLD = 7.5;
+        private int ENTROPY_SAMPLE_SIZE = 4096;
 
 
         private static readonly char[] InvalidPathChars = Path.GetInvalidPathChars();
@@ -298,7 +298,7 @@ namespace SecVerseLHE.Core
                 {
                     if (_disposed || !_isRunning)
                         break;
-
+                    if (_cancellationToken.IsCancellationRequested) break;
                     ProcessFileEventLogic(fileEvent);
                 }
                 catch (Exception ex)
@@ -319,7 +319,7 @@ namespace SecVerseLHE.Core
         
         private void ProcessFileEventLogic(FileEventData e)
         {
-            if (_disposed || _cancellationToken.IsCancellationRequested || !_isRunning)
+            if (_disposed || _cancellationToken.IsCancellationRequested  || !_isRunning)
                 return;
 
             string filePath = e.Path;
